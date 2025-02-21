@@ -1,4 +1,0 @@
-positions:
-  /var/log/mysql/error.log: "76601899"
-  /var/log/mysql/general.log: "179936634"
-  /var/log/mysql/slow.log: "381867992"

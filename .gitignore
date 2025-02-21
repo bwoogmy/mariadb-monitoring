@@ -1,0 +1,7 @@
+loki-data/
+promtail-data/
+grafana-data/
+*.log
+*.db
+*.tmp
+
