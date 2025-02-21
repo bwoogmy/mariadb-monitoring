@@ -1,0 +1,67 @@
+server:
+  http_listen_address: 0.0.0.0
+  http_listen_port: 9080
+
+positions:
+  filename: "/var/promtail/positions.yaml"
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: fake
+
+scrape_configs:
+  - job_name: mariadb_error_log
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: mariadb_error_log
+          container: mariadb
+          __path__: "/var/log/mysql/error.log"
+    pipeline_stages:
+      - regex:
+          expression: '.*\[ERROR\]\s+(?P<error_message>.*)'
+      - labels:
+          error_message:
+      - metrics:
+          mariadb_error_count:
+            type: counter
+            description: "Total number of MariaDB server errors"
+            config:
+              match_all: true
+              action: inc
+
+  - job_name: mariadb_queries
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: mariadb_queries
+          container: mariadb
+          __path__: "/var/log/mysql/general.log"
+    pipeline_stages:
+      - regex:
+          expression: '.*Query\s+(?P<query_type>SELECT|INSERT|UPDATE|DELETE)\s+.*'
+      - labels:
+          query_type:
+      - metrics:
+          mariadb_total_queries:
+            type: counter
+            description: "Total number of SQL queries"
+            config:
+              match_all: true
+              action: inc
+
+  - job_name: mariadb_slow_log
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: mariadb_slow_log
+          container: mariadb
+          __path__: "/var/log/mysql/slow.log"
+    pipeline_stages:
+      - regex:
+          expression: 'Query_time: (?P<query_time>[0-9]+\.[0-9]+)'
+      - metrics:
+          mariadb_query_time_seconds:
+            type: histogram
+            source: query_time
+            buckets: [0.001, 0.01, 0.1, 0.5, 1, 2, 5, 10]
